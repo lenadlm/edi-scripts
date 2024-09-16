@@ -36,10 +36,13 @@ foreach ($file in $files) {
         -replace '02SHRS1MA', '02SHSN1MA' `
         -replace '02SHZS1MA', '02SI0N1MA' `
         -replace ' 432W     ', ' KLMB0432W' `
+        -replace '02SIHS1MA', '02SIIN1MA' `
+        -replace ' 433W     ', ' KKAY0433W' `
         -replace 'OldString3', 'NewString3' `
         -replace 'OldString2', 'NewString2' `
-        -replace 'OldString3', 'NewString3' `
+		-replace 'OldString3', 'NewString3' `
         -replace 'OldString2', 'NewString2' `
+		-replace 'OldString3', 'NewString3' `
         -replace 'OldString3', 'NewString3'
 
     # Write the modified content back to the file
