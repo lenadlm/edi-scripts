@@ -40,10 +40,8 @@ function Apply-Replacements {
     return $line
 }
 
-# Initialize progress tracking
+# Get the files
 $files = Get-ChildItem $directoryPath
-$totalFiles = $files.Count
-$counter = 0
 
 foreach ($file in $files) {
     try {
@@ -80,10 +78,6 @@ foreach ($file in $files) {
     } catch {
         Write-Host "Error writing to file: $($file.FullName). Error: $_"
     }
-
-    # Update progress
-    $counter++
-    Write-Progress -Activity "Processing files" -Status "$counter out of $totalFiles" -PercentComplete (($counter / $totalFiles) * 100)
 }
 
 Write-Host "All files processed."
