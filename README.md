@@ -1,2 +1,2 @@
 # edi-scripts
-script to update edo files before pushing to sftp
+script to update selected edi files before pushing via sftp
