@@ -1,5 +1,5 @@
 # Define the directory containing the files
-$directoryPath = "C:\HLAG\Users\MBELLLE\EDI\EDO\*.xml"
+$directoryPath = $PATH
 
 # Function to apply replacements
 function Apply-Replacements {
