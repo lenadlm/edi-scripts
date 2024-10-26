@@ -35,6 +35,11 @@ $replacements = @(
     @(' 433W     ', ' KKAY0433W'),
     @('02SSIS1MA', '02STGN1MA'),
     @(' 435W     ', ' KKMI0435W'),
+	@('2437S ', '02437N'),
+	@(' 438W     ', ' KKRM0438W'),
+	@('02SINS1MA', '02STPN1MA'),
+	@('V7A4476', '3E6877 '),
+	@('02SILS1MA', '02SIMN1MA'),
     @('OldString3', 'NewString3')
 )
 
