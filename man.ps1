@@ -1,11 +1,9 @@
 # Define the directory containing the files
-$directoryPath = $PATH
+$directoryPath = "$PATH"
 
 # Function to apply replacements
 function Apply-Replacements {
-    param (
-        [string]$line
-    )
+    param ([string]$line)
 
     $replacements = @(
         '<pd_type>SAD</pd_type>','<pd_type/>',
@@ -16,9 +14,9 @@ function Apply-Replacements {
         '45R5', '45R0',
         'CNSTG', 'CNNSA',
         'CNJUJ', 'CNNGB',
-	'CNNJI', 'CNNGB',
+	    'CNNJI', 'CNNGB',
         'EEMUG', 'DEHAM',
-	'3402000000', '3402900000',
+	    '3402000000', '3402900000',
         '0000000000', '8609000000',
         '9817000000', '8703243100',
         '9995000000', '6911900000',
@@ -64,40 +62,39 @@ function Apply-Replacements {
         '8426110000', '8418100000',
         '1210000000', '1210100000',
         '1193000000', '1210100000',
-	'8716391000', '8708290000',
-	'8704311000', '8708290000',
-	'8429520000', '8418100000',
-	'9406000000', '9406101000',
-	'8427100000', '8418100000',
-	'8429519900', '8418100000',
-	'1789000000', '3823190000',
-	'8426410000', '8418100000',
-	'8427200000', '8418100000',
-	'8482000000', '8418100000',
-	'1905000000', '6911900000',
-	'8482900000', '8418100000',
-	'9403000000', '6911900000',
-	'3402190000', '3302900000',
-	'3402190000', '3302900000',
-	'4818400000', '4818500000',
-	'3103000000', '3103110000',
-	'2202000000', '2202910000',
-	'3082000000', '2202910000',
-	'9403900000', '6911900000',
-	'8517700000', '6911900000',
+	    '8716391000', '8708290000',
+	    '8704311000', '8708290000',
+	    '8429520000', '8418100000',
+	    '9406000000', '9406101000',
+	    '8427100000', '8418100000',
+	    '8429519900', '8418100000',
+	    '1789000000', '3823190000',
+	    '8426410000', '8418100000',
+	    '8427200000', '8418100000',
+	    '8482000000', '8418100000',
+	    '1905000000', '6911900000',
+	    '8482900000', '8418100000',
+	    '9403000000', '6911900000',
+	    '3402190000', '3302900000',
+	    '3402190000', '3302900000',
+	    '4818400000', '4818500000',
+	    '3103000000', '3103110000',
+	    '2202000000', '2202910000',
+	    '3082000000', '2202910000',
+	    '9403900000', '6911900000',
+	    '8517700000', '6911900000',
+        'OldString1', 'NewString1'
         'OldString1', 'NewString1'
     )
 
-    # Loop through each replacement pair
     for ($i = 0; $i -lt $replacements.Length; $i += 2) {
         $line = $line -replace $replacements[$i], $replacements[$i + 1]
     }
-
     return $line
 }
 
-# Get the files
-$files = Get-ChildItem $directoryPath
+# Get only .xml files in the specified directory
+$files = Get-ChildItem -Path $directoryPath -Filter "*.xml" -File
 
 foreach ($file in $files) {
     try {
@@ -110,17 +107,23 @@ foreach ($file in $files) {
 
     # Initialize a variable to store the modified content
     $modifiedContent = @()
-    
+    $tdBillCode = ""  # To track the current td_bill_code
+
     foreach ($line in $content) {
+        # Check for td_bill_code in the current line
+        if ($line -match '<td_bill_code>(.*?)</td_bill_code>') {
+            $tdBillCode = $matches[1]  # Extract the content of td_bill_code
+        }
+
         # Apply the replacements using the function
         $originalLine = $line
         $line = Apply-Replacements -line $line
 
         # Log if the line was modified
         if ($originalLine -ne $line) {
-            Write-Host "File: $($file.FullName)"
-            Write-Host "Original: $originalLine"
-            Write-Host "Replaced: $line"
+            Write-Host ("TD Bill Code:".PadRight(20) + "$tdBillCode")
+            Write-Host "Original Line: $originalLine"
+            Write-Host "Replaced Line: $line"
         }
 
         # Add the modified line to the content array
