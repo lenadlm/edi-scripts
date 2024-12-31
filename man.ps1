@@ -12,6 +12,7 @@ function Apply-Replacements {
         '22K1', '22T0',
         '25K1', '22T0',
         '45R5', '45R0',
+        '45S3', '45G1',
         'CNSTG', 'CNNSA',
         'CNJUJ', 'CNNGB',
 	    'CNNJI', 'CNNGB',
@@ -83,8 +84,21 @@ function Apply-Replacements {
 	    '3082000000', '2202910000',
 	    '9403900000', '6911900000',
 	    '8517700000', '6911900000',
-        'OldString1', 'NewString1'
-        'OldString1', 'NewString1'
+        '1509000000', '1509900000',
+        '3808000000', '3808690000',
+        '3301000000', '8609000000',
+        '3306000000', '8609000000',
+        '8708000000', '8708290000',
+        '3822000000', '3824999000',
+        '8433510000', '8431100000',
+        '2811000000', '2811110000',
+        '3926000000', '6911900000',
+        '9401300000', '6911900000',
+        '4825790000', '4802550000',
+        '9000000000', '6911900000',
+        '8700000000', '8708290000',
+        '9018000000', '9018110000',
+        'oldstring0', 'newstring0'
     )
 
     for ($i = 0; $i -lt $replacements.Length; $i += 2) {
@@ -121,9 +135,10 @@ foreach ($file in $files) {
 
         # Log if the line was modified
         if ($originalLine -ne $line) {
-            Write-Host ("TD Bill Code:".PadRight(20) + "$tdBillCode")
+            Write-Host ("TD Bill Code:".PadRight(25) + "$tdBillCode")
             Write-Host "Original Line: $originalLine"
             Write-Host "Replaced Line: $line"
+            Write-Host "" 
         }
 
         # Add the modified line to the content array
