@@ -1,5 +1,5 @@
 # Define the directory containing the files
-$directoryPath = $PATH
+$directoryPath = "C:\HLAG\Users\MBELLLE\EDI\EDO"
 
 # Define a set of characters to randomly choose from
 $characters = "0123456789".ToCharArray()
@@ -25,50 +25,53 @@ Write-Host "Replacing '$oldChar' with '$newChar' in filenames"
 $replacements = @(
     @('OldString', 'NewString'),
     @('2431S ', '02431N'),
-    @('02SHXS1MA', '02SHYN1MA'),
-    @('02SGPS1MA', '02SGQN1MA'),
-    @(' 431W     ', ' KKRM0431W'),
-    @('02SHRS1MA', '02SHSN1MA'),
-    @('02SHZS1MA', '02SI0N1MA'),
-    @(' 432W     ', ' KLMB0432W'),
-    @('02SIHS1MA', '02SIIN1MA'),
+    @('2444S ', '02444N'),
+    @('2448S ', '02448N'),
     @(' 433W     ', ' KKAY0433W'),
-    @('02SSIS1MA', '02STGN1MA'),
     @(' 435W     ', ' KKMI0435W'),
-    @('2437S ', '02437N'),
     @(' 438W     ', ' KKRM0438W'),
+    @(' 441W     ', ' KGDG0441W'),
+    @(' 443W     ', ' KSJI0443W'),
+    @(' 446W     ', ' KLMB0446W'),
+    @(' 447W     ', ' KSMP0447W'),
+    @('02SIXS1MA', '02SIYN1MA'),
+    @('02SIHS1MA', '02SIIN1MA'),
+    @('02SIRS1MA', '02SISN1MA'),
     @('02SINS1MA', '02STPN1MA'),
-    @('V7A4476', '3E6877 '),
     @('02SILS1MA', '02SIMN1MA'),
+    @('02SJ1S1MA', '02SJ2N1MA'),
+    @('02SJ7S1MA', '02SJ8N1MA'),
+    @('444W', '444E'),
+    @('V7A4476', '3E6877 '),
     @('OldString3', 'NewString3')
 )
 
 # Get all .txt files in the directory
-$files = Get-ChildItem "$directoryPath\*.txt"
+$files = Get-ChildItem -Path "$directoryPath\*.txt" -Force
 
 foreach ($file in $files) {
-    # Get file content
-    $content = Get-Content $file.FullName
-    
-    # Apply each replacement
-    foreach ($replacement in $replacements) {
-        $content = $content -replace $replacement[0], $replacement[1]
-    }
-    
-    # Write the modified content back to the file
-    $content | Set-Content -Encoding UTF8 $file.FullName
-
-    # Check if the filename contains the old character
-    if ($file.Name -like "*$oldChar*") {
-        # Create the new filename by replacing the old character with the new one
-        $newFileName = $file.Name -replace $oldChar, $newChar
-
-        # Rename the file with error handling
-        try {
-            Rename-Item -Path $file.FullName -NewName $newFileName
-            Write-Host "Renamed '$($file.Name)' to '$newFileName'"
-        } catch {
-            Write-Host "Failed to rename '$($file.Name)': $_"
+    try {
+        # --- Step 1: Update File Content ---
+        $content = Get-Content $file.FullName
+        
+        foreach ($replacement in $replacements) {
+            $content = $content -replace $replacement[0], $replacement[1]
         }
+
+        # Save updated content
+        $content | Set-Content -Encoding UTF8 $file.FullName
+
+        # --- Step 2: Rename the File ---
+        # Ensure old character replacement happens every time
+        $newFileName = $file.Name -replace [regex]::Escape($oldChar), $newChar
+
+        if ($file.Name -ne $newFileName) {
+            Rename-Item -Path $file.FullName -NewName $newFileName
+            Write-Host "Renamed: '$($file.Name)' to '$newFileName'"
+        } else {
+            Write-Host "Not renamed: $($file.Name)"
+        }
+    } catch {
+        Write-Host "Error processing file '$($file.FullName)': $_"
     }
 }
