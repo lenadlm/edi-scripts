@@ -1,5 +1,5 @@
 # Define the directory containing the files
-$directoryPath = "C:\HLAG\Users\MBELLLE\EDI\EDO"
+$directoryPath = "$PATH"
 
 # Define a set of characters to randomly choose from
 $characters = "0123456789".ToCharArray()
