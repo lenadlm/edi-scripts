@@ -1,5 +1,3 @@
-<pd_type>SAD</pd_type>,<pd_type>NIL</pd_type>
-<nil/>,<nil>Y</nil>
 >22K1<,>22T0<
 >22K2<,>22T0<
 >22K7<,>22T0<
