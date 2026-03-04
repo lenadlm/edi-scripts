@@ -1,5 +1,5 @@
 # === CONFIGURATION ===
-$BasePath = "C:\Users\MBELLLE\OneDrive - Hapag-Lloyd AG\Documents\Amendments"
+$BasePath = "C:\Users\...\Documents\Amendments"
 $SkipNames = @("Archive")
 $Timestamp = (Get-Date).ToString("yyyy-MM-dd_HH-mm-ss")
 $ZippedFolderName = "Zipped_$Timestamp"
