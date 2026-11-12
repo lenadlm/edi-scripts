@@ -162,13 +162,18 @@ def scan_keywords(path: Path, keywords) -> list[KeywordHit]:
                   for m in [TD_CODE_RE.search(ln)] if m]
 
     hits: list[KeywordHit] = []
-    for el in tree.iter():
-        if local_name(el.tag) != "td":
-            continue
+    all_els = list(tree.iter())
+    records = [e for e in all_els if local_name(e.tag).lower() == "td"]
+    if not records:
+        # fall back to any element holding a <*bill_code> child
+        records = [e for e in all_els
+                   if any(local_name(c.tag).lower().endswith("bill_code") for c in list(e))]
+
+    for el in records:
         code = desc = ""
         fields: list[tuple[str, str]] = []
         for child in el:
-            name = local_name(child.tag)
+            name = local_name(child.tag).lower()
             text = " ".join(("".join(child.itertext()) or "").split())
             if name == "td_bill_code":
                 code = (child.text or "").strip()
