@@ -34,11 +34,11 @@ DEFAULT_URL = "https://raw.githubusercontent.com/lenadlm/edi-scripts/main/replac
 
 # (label, regex) - case-insensitive; word-ish boundaries to avoid false hits.
 DEFAULT_KEYWORDS = [
-    ("TRANSHIPMENT", r"transs?hipment"),
+    ("TRANSHIPMENT", r"transs?hip(?:ment|ped|ping)?"),
     ("ZANZIBAR", r"zanzibar"),
-    ("CFS", r"\bcfs\b"),
-    ("CONSOLIDATION", r"consolidat(?:ion|ed|ing)?"),
-    ("SHIPPERS OWN", r"shipper['\u2019]?s\s+own"),
+    ("CFS", r"\bc\.?f\.?s\.?\b"),
+    ("CONSOLIDATION", r"consolidat"),
+    ("SHIPPERS OWN", r"shipper['\u2019]?s?[\s\u2013-]*own"),
 ]
 
 
@@ -113,7 +113,7 @@ def write_text(path: Path, text: str, encoding: str, backup: bool) -> None:
 
 
 # ------------------------------------------------------------------- reporting
-TD_CODE_RE = re.compile(r"<td_bill_code>\s*(.*?)\s*</td_bill_code>", re.S)
+TD_CODE_RE = re.compile(r"<(?:[\w.-]+:)?td_bill_code>\s*(.*?)\s*</(?:[\w.-]+:)?td_bill_code>", re.S)
 
 
 def changed_lines(before: str, after: str) -> list[tuple[int, str, str]]:
@@ -137,6 +137,7 @@ class KeywordHit:
     description: str
     matched: list[str] = field(default_factory=list)
     line: int = 0
+    field: str = "description"
 
 
 def local_name(tag: str) -> str:
@@ -165,23 +166,35 @@ def scan_keywords(path: Path, keywords) -> list[KeywordHit]:
         if local_name(el.tag) != "td":
             continue
         code = desc = ""
+        fields: list[tuple[str, str]] = []
         for child in el:
             name = local_name(child.tag)
+            text = " ".join(("".join(child.itertext()) or "").split())
             if name == "td_bill_code":
                 code = (child.text or "").strip()
             elif name == "description":
-                desc = " ".join((child.text or "").split())
-        if not desc:
-            continue
+                desc = text
+            elif text and len(list(child)) == 0:
+                fields.append((name, text))
+        # consume bill-code lines in document order so duplicates stay aligned
+        line_no = 0
+        while bill_lines and bill_lines[0][1] != code:
+            bill_lines.pop(0)
+        if bill_lines:
+            line_no = bill_lines.pop(0)[0]
+
         matched = [label for label, rx in keywords if re.search(rx, desc, re.I)]
+        seen = set(matched)
         if matched:
-            # consume bill-code lines in document order so duplicates stay aligned
-            line_no = 0
-            while bill_lines and bill_lines[0][1] != code:
-                bill_lines.pop(0)
-            if bill_lines:
-                line_no = bill_lines.pop(0)[0]
             hits.append(KeywordHit(path.name, code, desc, matched, line_no))
+
+        # keywords present in the TD but not inside <description>
+        for fname, ftext in fields:
+            extra = [lb for lb, rx in keywords
+                     if lb not in seen and re.search(rx, ftext, re.I)]
+            if extra:
+                seen.update(extra)
+                hits.append(KeywordHit(path.name, code, ftext, extra, line_no, fname))
     return hits
 
 
@@ -298,17 +311,18 @@ def main(argv: list[str]) -> int:
             print(f"\n{label}  ({len(rows)})")
             for h in rows:
                 where = f"line {h.line}" if h.line else "line ?"
-                print(f"  {h.td_bill_code:<14} {h.file} ({where})")
+                field = "" if h.field == "description" else f" [{h.field}]"
+                print(f"  {h.td_bill_code:<14} {h.file} ({where}){field}")
                 print(f"  {'':<14} {h.description[:150]}")
         print(f"\nTotal matching TD elements: {len(hits)}")
 
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8-sig") as fh:
             w = csv.writer(fh)
-            w.writerow(["keyword", "td_bill_code", "file", "line", "description"])
+            w.writerow(["keyword", "td_bill_code", "file", "line", "field", "text"])
             for h in hits:
                 for label in h.matched:
-                    w.writerow([label, h.td_bill_code, h.file, h.line, h.description])
+                    w.writerow([label, h.td_bill_code, h.file, h.line, h.field, h.description])
         print(f"CSV written: {args.csv}")
 
     print("\nAll files processed.")
