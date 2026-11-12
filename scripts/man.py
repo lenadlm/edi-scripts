@@ -145,14 +145,32 @@ def local_name(tag: str) -> str:
 
 
 def scan_keywords(path: Path, keywords) -> list[KeywordHit]:
-    """Find every <td> whose <description> matches one of the keywords."""
+    """Match keywords inside every <description>, paired to its TD record."""
     try:
         tree = ET.parse(path)
     except ET.ParseError as exc:
         print(f"  ! {path.name}: not well-formed XML ({exc}) - skipped", file=sys.stderr)
         return []
 
-    # line numbers for <td_bill_code> occurrences, in file order
+    root = tree.getroot()
+    parent = {child: node for node in root.iter() for child in node}
+
+    def walk_up(el, wanted):
+        while el is not None:
+            if local_name(el.tag).lower() == wanted:
+                return el
+            el = parent.get(el)
+        return None
+
+    def bill_code(rec):
+        if rec is None:
+            return ""
+        for child in rec:
+            if local_name(child.tag).lower().endswith("bill_code"):
+                return " ".join("".join(child.itertext()).split())
+        return ""
+
+    # line numbers for <*bill_code> occurrences, in file order
     try:
         text_lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
     except OSError:
@@ -161,45 +179,27 @@ def scan_keywords(path: Path, keywords) -> list[KeywordHit]:
                   for i, ln in enumerate(text_lines)
                   for m in [TD_CODE_RE.search(ln)] if m]
 
+    def line_for(code, used):
+        for n, c in bill_lines:
+            if c == code and n not in used:
+                used.add(n)
+                return n
+        return 0
+
     hits: list[KeywordHit] = []
-    all_els = list(tree.iter())
-    records = [e for e in all_els if local_name(e.tag).lower() == "td"]
-    if not records:
-        # fall back to any element holding a <*bill_code> child
-        records = [e for e in all_els
-                   if any(local_name(c.tag).lower().endswith("bill_code") for c in list(e))]
-
-    for el in records:
-        code = desc = ""
-        fields: list[tuple[str, str]] = []
-        for child in el:
-            name = local_name(child.tag).lower()
-            text = " ".join(("".join(child.itertext()) or "").split())
-            if name.endswith("bill_code"):
-                code = (child.text or "").strip()
-            elif name == "description":
-                desc = text
-            elif text and len(list(child)) == 0:
-                fields.append((name, text))
-        # consume bill-code lines in document order so duplicates stay aligned
-        line_no = 0
-        while bill_lines and bill_lines[0][1] != code:
-            bill_lines.pop(0)
-        if bill_lines:
-            line_no = bill_lines.pop(0)[0]
-
-        matched = [label for label, rx in keywords if re.search(rx, desc, re.I)]
-        seen = set(matched)
-        if matched:
-            hits.append(KeywordHit(path.name, code, desc, matched, line_no))
-
-        # keywords present in the TD but not inside <description>
-        for fname, ftext in fields:
-            extra = [lb for lb, rx in keywords
-                     if lb not in seen and re.search(rx, ftext, re.I)]
-            if extra:
-                seen.update(extra)
-                hits.append(KeywordHit(path.name, code, ftext, extra, line_no, fname))
+    used_lines: set[int] = set()
+    for el in root.iter():
+        if local_name(el.tag).lower() != "description":
+            continue
+        text = " ".join("".join(el.itertext()).split())
+        if not text:
+            continue
+        matched = [label for label, rx in keywords if re.search(rx, text, re.I)]
+        if not matched:
+            continue
+        rec = walk_up(el, "td")
+        code = bill_code(rec)
+        hits.append(KeywordHit(path.name, code, text, matched, line_for(code, used_lines)))
     return hits
 
 
