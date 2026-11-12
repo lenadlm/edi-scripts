@@ -113,7 +113,7 @@ def write_text(path: Path, text: str, encoding: str, backup: bool) -> None:
 
 
 # ------------------------------------------------------------------- reporting
-TD_CODE_RE = re.compile(r"<(?:[\w.-]+:)?td_bill_code>\s*(.*?)\s*</(?:[\w.-]+:)?td_bill_code>", re.S)
+TD_CODE_RE = re.compile(r"<(?:[\w.-]+:)?[\w.-]*bill_code[^>]*>\s*(.*?)\s*</(?:[\w.-]+:)?[\w.-]*bill_code>", re.S)
 
 
 def changed_lines(before: str, after: str) -> list[tuple[int, str, str]]:
@@ -175,7 +175,7 @@ def scan_keywords(path: Path, keywords) -> list[KeywordHit]:
         for child in el:
             name = local_name(child.tag).lower()
             text = " ".join(("".join(child.itertext()) or "").split())
-            if name == "td_bill_code":
+            if name.endswith("bill_code"):
                 code = (child.text or "").strip()
             elif name == "description":
                 desc = text
