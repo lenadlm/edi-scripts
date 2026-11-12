@@ -136,6 +136,7 @@ class KeywordHit:
     td_bill_code: str
     description: str
     matched: list[str] = field(default_factory=list)
+    line: int = 0
 
 
 def local_name(tag: str) -> str:
@@ -149,6 +150,15 @@ def scan_keywords(path: Path, keywords) -> list[KeywordHit]:
     except ET.ParseError as exc:
         print(f"  ! {path.name}: not well-formed XML ({exc}) - skipped", file=sys.stderr)
         return []
+
+    # line numbers for <td_bill_code> occurrences, in file order
+    try:
+        text_lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+    except OSError:
+        text_lines = []
+    bill_lines = [(i + 1, m.group(1))
+                  for i, ln in enumerate(text_lines)
+                  for m in [TD_CODE_RE.search(ln)] if m]
 
     hits: list[KeywordHit] = []
     for el in tree.iter():
@@ -165,7 +175,13 @@ def scan_keywords(path: Path, keywords) -> list[KeywordHit]:
             continue
         matched = [label for label, rx in keywords if re.search(rx, desc, re.I)]
         if matched:
-            hits.append(KeywordHit(path.name, code, desc, matched))
+            # consume bill-code lines in document order so duplicates stay aligned
+            line_no = 0
+            while bill_lines and bill_lines[0][1] != code:
+                bill_lines.pop(0)
+            if bill_lines:
+                line_no = bill_lines.pop(0)[0]
+            hits.append(KeywordHit(path.name, code, desc, matched, line_no))
     return hits
 
 
@@ -228,8 +244,11 @@ def main(argv: list[str]) -> int:
             if not args.quiet:
                 lines = before.splitlines()
                 for idx, old_line, new_line in diffs:
+                    fired = [r for r in reps if r.old in old_line]
                     print(f"TD Bill Code:            {td_context(lines, idx) or '-'}")
                     print(f"  line {idx + 1}")
+                    for r in fired:
+                        print(f"  rule replacements.txt:{r.lineno}: {r.old} -> {r.new}")
                     print(f"  - {old_line.strip()}")
                     print(f"  + {new_line.strip()}")
                 print()
@@ -278,17 +297,18 @@ def main(argv: list[str]) -> int:
             rows = groups.get(label, [])
             print(f"\n{label}  ({len(rows)})")
             for h in rows:
-                print(f"  {h.td_bill_code:<14} {h.file}")
+                where = f"line {h.line}" if h.line else "line ?"
+                print(f"  {h.td_bill_code:<14} {h.file} ({where})")
                 print(f"  {'':<14} {h.description[:150]}")
         print(f"\nTotal matching TD elements: {len(hits)}")
 
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8-sig") as fh:
             w = csv.writer(fh)
-            w.writerow(["keyword", "td_bill_code", "file", "description"])
+            w.writerow(["keyword", "td_bill_code", "file", "line", "description"])
             for h in hits:
                 for label in h.matched:
-                    w.writerow([label, h.td_bill_code, h.file, h.description])
+                    w.writerow([label, h.td_bill_code, h.file, h.line, h.description])
         print(f"CSV written: {args.csv}")
 
     print("\nAll files processed.")

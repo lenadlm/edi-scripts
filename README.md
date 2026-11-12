@@ -26,6 +26,8 @@ Behaviour notes:
   case-insensitive: TRANSHIPMENT/TRANSSHIPMENT, ZANZIBAR, CFS (whole word),
   CONSOLIDATION, SHIPPERS OWN (straight or curly apostrophe). Add more with
   `--keywords A,B`.
+- Every change is printed with the exact rule that fired (`replacements.txt:<line>: old -> new`),
+  plus the TD bill code and line number. Nothing outside `replacements.txt` is ever modified.
 - Malformed XML is reported to stderr and skipped; other files still process.
 - Use `--replacements <path-or-url>` to pin a specific rules file.
 
