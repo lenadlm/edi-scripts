@@ -39,6 +39,8 @@ DEFAULT_KEYWORDS = [
     ("CFS", r"\bc\.?f\.?s\.?\b"),
     ("CONSOLIDATION", r"consolidat"),
     ("SHIPPERS OWN", r"shipper['\u2019]?s?[\s\u2013-]*own"),
+    ("STRIPPING", r"strip+ing|stripped"),
+    ("SHIP SPARES", r"ship['\u2019]?s?[\s\u2013-]*spares?"),
 ]
 
 
